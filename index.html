@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Študijski Tinder</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#f4f7fb,#eef2ff);color:#17202a;font-family:Arial,sans-serif;min-height:100vh}
+.wrap{max-width:680px;margin:auto;padding:18px 14px 35px}.top{text-align:center}h1{margin:4px 0 2px;font-size:29px}
+.stage{font-weight:800;color:#4b5563}.progress{height:8px;background:#dfe4ec;border-radius:10px;overflow:hidden;margin:12px 0 20px}.bar{height:100%;background:#2563eb;transition:.3s}
+.intro,.result{background:#fff;border-radius:26px;padding:30px 24px;box-shadow:0 12px 35px #17202a18;text-align:center}
+.badge{display:inline-block;background:#eef4ff;color:#2563eb;border-radius:99px;padding:8px 14px;font-weight:800;margin-bottom:15px}
+h2{font-size:27px;margin:8px 0 14px}.question{font-size:22px;line-height:1.4;font-weight:750;margin:25px 0}.explain{color:#667085;line-height:1.5}
+button{border:0;border-radius:15px;padding:14px 24px;font-size:16px;font-weight:800;cursor:pointer}.start{background:#2563eb;color:#fff;margin-top:18px}
+.count{text-align:center;font-weight:800;color:#4b5563;margin-bottom:5px}.cardStage{height:430px;display:flex;align-items:center;justify-content:center}
+.card{width:min(92vw,510px);height:370px;background:white;border-radius:27px;box-shadow:0 12px 35px #17202a22;padding:30px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;touch-action:none;user-select:none}
+.icon{font-size:56px;margin-bottom:17px}.name{font-size:31px;font-weight:850;line-height:1.15}.cardq{font-size:18px;line-height:1.45;font-weight:650;margin:20px 0}.hint{color:#7b8491}
+.buttons{display:flex;justify-content:center;gap:24px}.no{background:#fee2e2;color:#b91c1c}.yes{background:#dcfce7;color:#15803d}
+.choice{display:block;text-align:left;border:1px solid #dce1e7;border-radius:13px;padding:12px;margin:8px 0;background:#fafbfc}
+.final{border-radius:20px;padding:20px;margin:12px 0;background:linear-gradient(135deg,#eef4ff,#f8faff);border:1px solid #d8e3ff;text-align:left}
+.finalnum{font-size:13px;font-weight:800;color:#2563eb}.finalname{font-size:22px;font-weight:850;margin-top:7px}
+.note{background:#fff8e6;border-radius:16px;padding:16px;line-height:1.5;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top"><h1>🎓 Študijski Tinder</h1><div class="stage" id="stage"></div>
+<div class="progress"><div class="bar" id="bar"></div></div></div>
+<div id="app"></div>
+</div>
+<script>
+const ALL=[
+"Medicina","Dentalna medicina","Farmacija","Veterinarstvo","Psihologija","Fizioterapija",
+"Kineziologija / šport","Zdravstvena nega","Delovna terapija","Logopedija in surdopedagogika",
+"Biologija","Mikrobiologija","Biotehnologija","Kemija","Fizika","Matematika",
+"Računalništvo in informatika","Elektrotehnika","Strojništvo","Gradbeništvo","Arhitektura",
+"Krajinska arhitektura","Promet in logistika","Pravo","Ekonomija / finance",
+"Management / podjetništvo","Politologija / mednarodni odnosi","Sociologija",
+"Komunikologija / odnosi z javnostmi","Novinarstvo","Pedagogika / andragogika",
+"Učiteljstvo / razredni pouk","Socialna pedagogika","Socialno delo","Filozofija","Zgodovina",
+"Umetnostna zgodovina / arheologija","Geografija","Jeziki / prevajanje",
+"Agronomija / hortikultura","Gozdarstvo","Živilstvo in prehrana","Likovna umetnost",
+"Oblikovanje / industrijsko in unikatno oblikovanje","Grafične in interaktivne komunikacije",
+"Film in televizija","Gledališče / dramska igra","Glasba"];
+let pool=[...ALL],round=0,index=0,selected=[];
+const Q=[
+"Bi želel/-a o tem študiju izvedeti več?",
+"Predstavljaj si, da študiraš ta študij. Je bila njegova izbira prava odločitev?"
+];
+const $=id=>document.getElementById(id);
+function header(text,p){$("stage").textContent=text;$("bar").style.width=p+"%"}
+function intro(r){
+ round=r; header((r+1)+". KROG",r?50:0);
+ $("app").innerHTML=`<div class="intro"><div class="badge">${r?"PREIZKUS ODLOČITVE":"PRVI VTIS"}</div>
+ <h2>${r+1}. KROG</h2><div class="question">»${Q[r]}«</div>
+ <p class="explain">${r?"Zdaj si predstavljaj, da bi bil ta študij tvoja dejanska izbira.": "Ne razmišljaj predolgo. Zaupaj prvemu občutku. Povleci desno za DA in levo za NE."}</p>
+ <button class="start" onclick="startRound()">Začni →</button></div>`;
+}
+function startRound(){index=0;selected=[];renderCard()}
+function renderCard(){
+ if(index>=pool.length){finishRound();return}
+ header((round+1)+". KROG · "+(index+1)+" / "+pool.length,
+ round?50+(index/pool.length)*45:(index/pool.length)*50);
+ $("app").innerHTML=`<div class="count">${index+1} / ${pool.length} · izbranih DA: ${selected.length}</div>
+ <div class="cardStage"><div class="card" id="card"><div class="icon">🎓</div>
+ <div class="name">${pool[index]}</div><div class="cardq">${Q[round]}</div>
+ <div class="hint">👈 NE &nbsp;&nbsp;&nbsp;&nbsp; DA 👉</div></div></div>
+ <div class="buttons"><button class="no" onclick="answer(false)">← NE</button>
+ <button class="yes" onclick="answer(true)">DA →</button></div>`;
+ let c=$("card"),sx=0,dx=0;
+ c.onpointerdown=e=>{sx=e.clientX;c.setPointerCapture(e.pointerId)};
+ c.onpointermove=e=>{dx=e.clientX-sx;c.style.transform=`translateX(${dx}px) rotate(${dx/18}deg)`};
+ c.onpointerup=()=>{if(Math.abs(dx)>90)answer(dx>0);else c.style.transform=""};
+}
+function answer(v){if(v)selected.push(pool[index]);index++;renderCard()}
+function finishRound(){
+ if(!selected.length){alert("V tem krogu moraš izbrati vsaj eno možnost.");startRound();return}
+ pool=[...selected];selected=[];index=0;
+ if(round===0){
+  header("✓ 1. KROG KONČAN",50);
+  $("app").innerHTML=`<div class="intro"><div class="badge">✓ 1. KROG KONČAN</div>
+  <h2>Odlično!</h2><div class="question">Ostalo ti je <b>${pool.length} študijskih možnosti.</b></div>
+  <p class="explain">Zdaj jih bomo pogledali še enkrat – tokrat skozi drugačne oči.</p>
+  <div class="question">»${Q[1]}«</div><button class="start" onclick="intro(1)">Začni 2. krog →</button></div>`;
+ }else{
+  header("✓ 2. KROG KONČAN",92);
+  $("app").innerHTML=`<div class="intro"><div class="badge">✓ 2. KROG KONČAN</div>
+  <h2>Čas za finale</h2><div class="question">Zdaj izberi <b>3 finaliste</b>.</div>
+  <p class="explain">Pred dokončnim izborom pomisli tudi na zahtevnost študija, možnost zaposlitve,
+  omejitev vpisa, svoje sposobnosti in stvari, ki te pri izbiri skrbijo.</p>
+  <button class="start" onclick="finalSelection()">Izberi 3 finaliste →</button></div>`;
+ }
+}
+function finalSelection(){
+ header("FINALNI IZBOR · 3",100);
+ $("app").innerHTML=`<div class="result"><div class="badge">🏆 FINALNI IZBOR</div>
+ <h2>Izberi svoje 3 finaliste</h2><p class="explain">Izberi tri možnosti, ki jih želiš najbolj raziskati.</p>
+ <div>${pool.map((x,n)=>`<label class="choice"><input type="checkbox" value="${n}" onchange="countFinal()"> ${x}</label>`).join("")}</div>
+ <p id="fc"><b>Izbranih: 0 / 3</b></p>
+ <button class="start" id="finish" disabled onclick="finishFinal()">Potrdi finaliste</button></div>`;
+}
+function countFinal(){
+ let n=document.querySelectorAll("input:checked").length;
+ $("fc").innerHTML="<b>Izbranih: "+n+" / 3</b>";
+ $("finish").disabled=n!==3;
+}
+function finishFinal(){
+ let f=[...document.querySelectorAll("input:checked")].map(x=>pool[+x.value]);
+ header("🏆 TVOJI 3 FINALISTI",100);
+ $("app").innerHTML=`<div class="result"><div class="badge">🎉 TVOJA KONČNA IZBIRA</div>
+ <h2>To so tvoji 3 finalisti</h2>
+ ${f.map((x,n)=>`<div class="final"><div class="finalnum">FINALIST ${n+1}</div><div class="finalname">${x}</div></div>`).join("")}
+ <div class="note"><b>✍️ Zdaj napiši svoje 3 finaliste na list.</b></div></div>`;
+}
+intro(0);
+</script>
+</body>
+</html>
